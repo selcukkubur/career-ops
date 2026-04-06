@@ -1,0 +1,42 @@
+# Career-Ops Dashboard Docker Image
+# Go TUI application built as separate container
+# Note: This is designed to be run interactively, not as a long-running service
+
+# Stage 1: Build the Go binary
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /src
+
+# Copy Go module files
+COPY dashboard/go.mod dashboard/go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY dashboard/ .
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o career-dashboard .
+
+# Stage 2: Minimal runtime image
+FROM alpine:latest
+
+# Install ncurses for TUI support (needed for Bubble Tea)
+RUN apk add --no-cache ncurses
+
+WORKDIR /app
+
+# Copy the binary from builder
+COPY --from=builder /src/career-dashboard ./career-dashboard
+
+# Copy the data directory reference (mounted as volume at runtime)
+# The dashboard reads applications.md and reports from the career-ops data directory
+
+# Create non-root user
+RUN addgroup -S career-ops && adduser -S career-ops -G career-ops
+USER career-ops
+
+# Default command - requires data volume mount
+ENTRYPOINT ["./career-dashboard"]
+CMD ["."]

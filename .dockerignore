@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Git
+.git
+
+# Data directories (mounted as volumes)
+data/
+reports/
+output/
+batch/logs/
+batch/tracker-additions/
+
+# Environment files (security - never include in image)
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+.DS_Store?
+
+# Git files (not needed in image)
+.gitignore
+.gitattributes
+
+# Documentation (not needed in runtime)
+docs/
+examples/
+*.md
+!CLAUDE.md
+
+# Go dashboard binary (built in separate container)
+dashboard/career-dashboard
+
+# Merged batch files
+batch/tracker-additions/merged
+
+# Test files
+src/debug-*.js
+
+# Beads/tasks directories (development only)
+.beads/
+tasks/
+
+# JDS directory (temporary job descriptions)
+jds/

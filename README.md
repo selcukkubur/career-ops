@@ -46,6 +46,34 @@ Built by someone who used it to evaluate 740+ job offers, generate 100+ tailored
 
 ## Quick Start
 
+### Option A: Docker + OpenAI (Recommended for Non-Claude Users)
+
+```bash
+# 1. Clone and configure
+git clone https://github.com/santifer/career-ops.git
+cd career-ops && cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
+
+# 2. Copy configs
+cp config/profile.example.yml config/profile.yml
+cp templates/portals.example.yml portals.yml
+
+# 3. Create your CV (cv.md in project root)
+
+# 4. Start Docker
+docker compose up -d --build
+
+# 5. Use via REST API (port 3000)
+curl http://localhost:3000/health
+curl -X POST http://localhost:3000/api/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{"urlOrJD": "https://jobs.example.com/job-123"}'
+```
+
+See [docs/DOCKER.md](docs/DOCKER.md) for full Docker documentation.
+
+### Option B: Claude Code (Original)
+
 ```bash
 # 1. Clone and install
 git clone https://github.com/santifer/career-ops.git

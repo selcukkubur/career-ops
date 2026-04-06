@@ -1,0 +1,122 @@
+services:
+  # Main Career-Ops API Server
+  career-ops:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: career-ops
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - LOG_LEVEL=info
+      - OPENAI_API_KEY=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
+      - OPENAI_MODEL=gpt-4o
+      - OPENAI_MAX_TOKENS=8192
+      - OPENAI_TEMPERATURE=0.7
+      - PLAYWRIGHT_HEADLESS=${PLAYWRIGHT_HEADLESS:-true}
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - BATCH_PARALLEL=${BATCH_PARALLEL:-1}
+      - BATCH_MAX_RETRIES=${BATCH_MAX_RETRIES:-2}
+      - RATE_LIMIT_RPM=${RATE_LIMIT_RPM:-60}
+      - CAREER_OPS_DATA_DIR=/app/data
+      - CAREER_OPS_REPORTS_DIR=/app/reports
+      - CAREER_OPS_OUTPUT_DIR=/app/output
+      - BRIGHTDATA_HOST=${BRIGHTDATA_HOST:-}
+      - BRIGHTDATA_PORT=${BRIGHTDATA_PORT:-}
+      - BRIGHTDATA_USERNAME=${BRIGHTDATA_USERNAME:-}
+      - BRIGHTDATA_PASSWORD=${BRIGHTDATA_PASSWORD:-}
+    volumes:
+      # Persistent data (named volumes for container-managed data)
+      - career-ops-data:/app/data
+      - career-ops-reports:/app/reports
+      - career-ops-output:/app/output
+      - career-ops-config:/app/config
+      # Local overrides for customization (optional - mount from host)
+      - ./data:/app/data:rw
+      - ./reports:/app/reports:rw
+      - ./output:/app/output:rw
+      - ./config:/app/config:rw
+      - ./modes:/app/modes:ro
+      - ./templates:/app/templates:ro
+      - ./fonts:/app/fonts:ro
+      - ./batch:/app/batch:rw
+      - ./portals.yml:/app/portals.yml:ro
+      - ./cv.md:/app/cv.md:ro
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - career-ops-network
+
+  # Go Dashboard TUI (optional - for terminal viewing)
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: career-ops-dashboard
+    stdin_open: true
+    tty: true
+    volumes:
+      # Read-only access to data for dashboard
+      - ./data:/data:ro
+      - ./reports:/reports:ro
+    environment:
+      - CAREER_OPS_PATH=/data
+    profiles:
+      - dashboard
+    networks:
+      - career-ops-network
+
+  # Batch Worker (can be scaled for parallel processing)
+  batch-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: career-ops-batch-worker
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - NODE_ENV=${NODE_ENV:-production}
+      - PLAYWRIGHT_HEADLESS=${PLAYWRIGHT_HEADLESS:-true}
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - IS_BATCH_WORKER=true
+    volumes:
+      - ./data:/app/data:rw
+      - ./reports:/app/reports:rw
+      - ./output:/app/output:rw
+      - ./config:/app/config:ro
+      - ./modes:/app/modes:ro
+      - ./templates:/app/templates:ro
+      - ./fonts:/app/fonts:ro
+      - ./batch:/app/batch:rw
+      - ./portals.yml:/app/portals.yml:ro
+      - ./cv.md:/app/cv.md:ro
+    profiles:
+      - batch
+    networks:
+      - career-ops-network
+
+volumes:
+  career-ops-data:
+    driver: local
+  career-ops-reports:
+    driver: local
+  career-ops-output:
+    driver: local
+  career-ops-config:
+    driver: local
+
+networks:
+  career-ops-network:
+    driver: bridge
